@@ -12,20 +12,29 @@ const emit = defineEmits<{
 // TODO 2: two refs for the filters
 //   search   -> the text typed in the search box
 //   category -> Category | "all", starts at "all"
-const search = ref<String>("");
+const search = ref<string>("");
 const category = ref<Category | "all">("all");
 
 // TODO 3: a computed `visible` list:
 //   - keep events of the selected category (or all)
 //   - keep events whose title OR location contains the search text, ignoring case
+const visible = computed(()=>{
+  return props.events.filter((event) =>{
+    const matchCategory = category.value === "all" ||
+                          event.category === category.value;
+    const matchSearch = event.title.toLowerCase().includes(search.value.toLowerCase())
+    || event.location.toLowerCase().includes(search.value.toLowerCase());
+    return matchCategory && matchSearch;
+  });
+});
 </script>
 
 <template>
   <section>
     <div class="filters">
       <!-- TODO 4: bind the input and the select to your refs with v-model -->
-      <input type="search" placeholder="Search title or location" aria-label="Search" />
-      <select aria-label="Category">
+      <input type="search" v-model="search" placeholder="Search title or location" aria-label="Search" />
+      <select v-model="category" aria-label="Category">
         <option value="all">All categories</option>
         <option value="talk">Talks</option>
         <option value="workshop">Workshops</option>
@@ -35,13 +44,22 @@ const category = ref<Category | "all">("all");
     </div>
 
     <!-- TODO 5: show "<visible count> of <total> events" -->
-    <p class="count">6 of 6 events</p>
+    <p class="count">
+      {{ visible.length }} of {{ events.length }} events
+    </p>
 
     <!-- TODO 6: render one EventCard per visible event (v-for with a :key),
          pass the event as a prop and pass its "book" event up.
          When nothing is visible, show the empty message instead (v-if / v-else). -->
-    <div class="grid"></div>
-    <p class="empty">No events match your search.</p>
+    <div v-if="visible.length >0 "  class="grid">
+      <EventCard
+      v-for="e in visible"
+      :key="e.id"
+      :event="e"
+      @book="(id) => emit('book',id)"
+      />
+    </div>
+    <p v-else class="empty" >No events match your search.</p>
   </section>
 </template>
 
